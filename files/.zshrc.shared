@@ -1,0 +1,47 @@
+export STARSHIP_CONFIG=~/.starship.toml
+
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
+export PATH="$PATH:$HOME/workspace/dotfiles/shared/bin"
+export PATH="$PATH:$HOME/.local/bin"
+
+fpath=(/Applications/Docker.app/Contents/Resources/etc $fpath)
+
+[[ -f ~/.aliases.zsh ]] && source ~/.aliases.zsh
+[[ -f ~/.iterm2_shell_integration.zsh ]] && source ~/.iterm2_shell_integration.zsh
+
+# History
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=10000
+setopt extended_history       # record timestamp of command in HISTFILE
+setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
+setopt hist_ignore_dups       # ignore duplicated commands history list
+setopt hist_ignore_space      # ignore commands that start with space
+setopt hist_verify            # show command with history expansion to user before running it
+setopt share_history          # share command history data between sessions
+
+source ~/.antidote/antidote.zsh
+
+antidote load
+
+autoload -Uz compinit && compinit
+
+command -v flux >/dev/null && . <(flux completion zsh)
+command -v kubectl >/dev/null && . <(kubectl completion zsh)
+command -v docker >/dev/null && . <(docker completion zsh)
+command -v gh >/dev/null && . <(gh completion -s zsh)
+command -v pulumi >/dev/null && . <(pulumi gen-completion zsh)
+command -v op >/dev/null && . <(op completion zsh)
+
+# Up/Down arrow: search history for commands starting with the current input, cursor at end
+autoload -U up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search    # Up arrow (normal mode, e.g. raw terminal)
+bindkey '^[[B' down-line-or-beginning-search  # Down arrow (normal mode)
+bindkey '^[OA' up-line-or-beginning-search    # Up arrow (application mode, e.g. inside tmux)
+bindkey '^[OB' down-line-or-beginning-search  # Down arrow (application mode)
+
+eval "$(starship init zsh)"
+eval "$(mise activate zsh)"

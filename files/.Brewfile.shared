@@ -1,0 +1,26 @@
+# Fonts
+cask "font-hack-nerd-font"
+
+# Applications
+cask "iterm2"
+cask "rectangle-pro"
+cask "jetbrains-toolbox"
+cask "visual-studio-code"
+cask "1password"
+cask "docker-desktop"
+cask "handy"
+
+# CLI tools
+brew "eza"
+brew "git"
+brew "gh"
+brew "jq"
+brew "ripgrep"
+brew "fzf"
+brew "starship"
+brew "zsh"
+brew "tmux"
+cask "1password-cli"
+tap "MisterTea/et"
+brew "MisterTea/et/et"
+brew "opentofu"
