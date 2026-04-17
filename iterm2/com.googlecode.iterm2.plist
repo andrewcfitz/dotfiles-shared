@@ -249,6 +249,32 @@
 	<true/>
 	<key>GlobalKeyMap</key>
 	<dict>
+		<key>0x44-0x120000-0x2</key>
+		<dict>
+			<key>Action</key>
+			<integer>28</integer>
+			<key>Apply Mode</key>
+			<integer>0</integer>
+			<key>Escaping</key>
+			<integer>2</integer>
+			<key>Text</key>
+			<string>5966FC5E-DF10-4EB4-A899-2E72DCB299AE</string>
+			<key>Version</key>
+			<integer>2</integer>
+		</dict>
+		<key>0x64-0x100000-0x2</key>
+		<dict>
+			<key>Action</key>
+			<integer>29</integer>
+			<key>Apply Mode</key>
+			<integer>0</integer>
+			<key>Escaping</key>
+			<integer>2</integer>
+			<key>Text</key>
+			<string>5966FC5E-DF10-4EB4-A899-2E72DCB299AE</string>
+			<key>Version</key>
+			<integer>2</integer>
+		</dict>
 		<key>0xd-0x20000-0x24</key>
 		<dict>
 			<key>Action</key>
