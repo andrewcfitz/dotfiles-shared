@@ -8,6 +8,7 @@ cask "jetbrains-toolbox"
 cask "visual-studio-code"
 cask "1password"
 cask "docker-desktop"
+cask "ghostty"
 cask "handy"
 
 # CLI tools
