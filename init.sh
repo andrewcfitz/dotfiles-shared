@@ -2,7 +2,7 @@
 
 set -e
 
-DOTFILES_DIR=$(dirname "$(realpath "$0")")
+DOTFILES_DIR=$(cd "$(dirname "$0")" && pwd -P)
 
 # Ensure submodules are initialized and up to date
 git -C "$DOTFILES_DIR" submodule update --init --recursive

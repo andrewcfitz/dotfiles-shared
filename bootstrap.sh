@@ -10,7 +10,7 @@ for arg in "$@"; do
     esac
 done
 
-DOTFILES_DIR=$(dirname "$(realpath "$0")")
+DOTFILES_DIR=$(cd "$(dirname "$0")" && pwd -P)
 
 if [ $BREW_ONLY -eq 0 ]; then
     ./init.sh
