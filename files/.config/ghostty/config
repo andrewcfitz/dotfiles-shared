@@ -1,2 +1,3 @@
 font-size = 14
 theme = dark:Dracula,light:Dracula
+working-directory = ~/workspace
