@@ -1,0 +1,33 @@
+#!/bin/bash
+# Push xterm-ghostty terminfo to a remote host on first ssh connect.
+# Invoked from ssh_config "Match host * exec". Always exits non-zero so the
+# match clause never applies — the side effect (terminfo install) is the point.
+
+set -u
+
+host="${1:-}"
+[ -z "$host" ] && exit 1
+
+# Recursion guard: the inner ssh below re-reads ssh_config and would re-enter
+# this script; skip when we're already inside a push.
+[ -n "${GHOSTTY_TERMINFO_PUSH:-}" ] && exit 1
+
+# Only engage when the local terminal is actually Ghostty.
+[ "${TERM:-}" = "xterm-ghostty" ] || exit 1
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ghostty/terminfo"
+marker="$cache_dir/$host"
+[ -f "$marker" ] && exit 1
+
+mkdir -p "$cache_dir"
+
+# BatchMode=yes: don't prompt for passwords if keys fail — just give up quietly.
+# ConnectTimeout: don't stall the parent ssh if the host is unreachable.
+if infocmp -x xterm-ghostty 2>/dev/null \
+    | GHOSTTY_TERMINFO_PUSH=1 ssh -o BatchMode=yes -o ConnectTimeout=5 -T "$host" \
+        'command -v tic >/dev/null 2>&1 && tic -x -' \
+        >/dev/null 2>&1; then
+    touch "$marker"
+fi
+
+exit 1
