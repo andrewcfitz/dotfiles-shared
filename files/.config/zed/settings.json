@@ -1,0 +1,18 @@
+{
+  "auto_install_extensions": {
+    "dracula": true
+  },
+  "theme": {
+    "mode": "system",
+    "light": "Dracula",
+    "dark": "Dracula"
+  },
+  "buffer_font_family": "Hack Nerd Font Mono",
+  "buffer_font_size": 14,
+  "ui_font_size": 14,
+  "format_on_save": "on",
+  "telemetry": {
+    "metrics": false,
+    "diagnostics": false
+  }
+}
