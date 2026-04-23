@@ -9,6 +9,7 @@ export PATH="$HOMEBREW_PREFIX/opt/gnu-sed/libexec/gnubin:$PATH"
 fpath=(/Applications/Docker.app/Contents/Resources/etc $fpath)
 
 [[ -f ~/.aliases.zsh ]] && source ~/.aliases.zsh
+[[ -f ~/.rtm.zsh ]] && source ~/.rtm.zsh
 [[ -f ~/.iterm2_shell_integration.zsh ]] && source ~/.iterm2_shell_integration.zsh
 
 # History
