@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Repoint stale claude-code Caskroom version paths at the current install so
+# long-lived workers spawned under an older version path keep working after
+# `brew upgrade` removes the directory they were spawned from.
+set -euo pipefail
+
+caskroom="/opt/homebrew/Caskroom/claude-code"
+state="$HOME/.cache/fix-claude-symlinks/versions"
+[[ -d "$caskroom" ]] || exit 0
+
+current="$(readlink /opt/homebrew/bin/claude 2>/dev/null || true)"
+current="${current%/claude}"
+current_name="${current##*/}"
+[[ -d "$current" ]] || exit 0
+
+mkdir -p "${state%/*}"
+touch "$state"
+
+shopt -s nullglob
+for entry in "$caskroom"/*; do
+  name="${entry##*/}"
+  [[ "$name" == .metadata ]] && continue
+  printf '%s\n' "$name" >>"$state"
+done
+
+sort -u -o "$state" "$state"
+
+while IFS= read -r name; do
+  [[ -z "$name" ]] && continue
+  [[ "$name" == "$current_name" ]] && continue
+  target="$caskroom/$name"
+  if [[ -L "$target" ]]; then
+    [[ "$(readlink "$target")" == "$current" ]] && continue
+    rm "$target"
+  elif [[ -e "$target" ]]; then
+    continue
+  fi
+  ln -s "$current" "$target"
+done <"$state"
