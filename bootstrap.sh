@@ -250,6 +250,11 @@ fi
 # --- Eternal Terminal ---
 if should_run ET; then
     log_section "Eternal Terminal"
+    if command -v et &> /dev/null && ! et --version &> /dev/null; then
+        log_action "et is broken (likely protobuf ABI drift) — rebuilding from source..."
+        brew reinstall --build-from-source et
+        log_info "et rebuilt"
+    fi
     log_action "Starting et service..."
     sudo brew services start et
     log_info "Eternal Terminal service started"
