@@ -30,6 +30,8 @@ those sections.
 
 Options:
   -h, --help        Show this help message and exit
+  --pull            Pull main repo and shared submodule; commit shared bump
+                    (opt-in only; not run when no flags are passed)
   --init            Run init.sh (git submodule setup)
   --homebrew        Install Homebrew and run brew bundle
   --symlinks        Clean up broken symlinks and link dotfiles
@@ -52,6 +54,7 @@ EOF
 }
 
 # Parse flags
+RUN_PULL=0
 RUN_INIT=0
 RUN_HOMEBREW=0
 RUN_SYMLINKS=0
@@ -69,6 +72,7 @@ RUN_ALL=1
 for arg in "$@"; do
     case "$arg" in
         -h|--help)     usage ;;
+        --pull)        RUN_PULL=1;      RUN_ALL=0 ;;
         --init)        RUN_INIT=1;     RUN_ALL=0 ;;
         --homebrew)    RUN_HOMEBREW=1;  RUN_ALL=0 ;;
         --symlinks)    RUN_SYMLINKS=1;  RUN_ALL=0 ;;
@@ -90,6 +94,43 @@ should_run() {
 }
 
 DOTFILES_DIR=$(cd "$(dirname "$0")" && pwd -P)
+
+# --- Pull repos ---
+# Opt-in only: never runs as part of bare `bootstrap.sh`. Pulls the outer
+# (main) dotfiles repo and the `shared` submodule on its tracked branch. If
+# shared moved, commits the pointer bump in the outer repo with a message
+# summarizing the included shared commits.
+if [ "$RUN_PULL" -eq 1 ]; then
+    log_section "Pull"
+
+    # Resolve the outer repo. When run via the bootstrap.sh symlink at the
+    # repo root, DOTFILES_DIR resolves to shared/. Walk up if so.
+    OUTER_DIR="$DOTFILES_DIR"
+    if [ "$(basename "$OUTER_DIR")" = "shared" ]; then
+        OUTER_DIR="$(dirname "$OUTER_DIR")"
+    fi
+    SHARED_DIR="$OUTER_DIR/shared"
+
+    log_action "Pulling $(basename "$OUTER_DIR")..."
+    git -C "$OUTER_DIR" pull --rebase --autostash
+
+    old_sha=$(git -C "$SHARED_DIR" rev-parse HEAD)
+    log_action "Pulling shared..."
+    git -C "$SHARED_DIR" pull --rebase --autostash
+    new_sha=$(git -C "$SHARED_DIR" rev-parse HEAD)
+
+    if [ "$old_sha" != "$new_sha" ]; then
+        log_action "Committing shared bump in $(basename "$OUTER_DIR")..."
+        summary=$(git -C "$SHARED_DIR" log --format='- %s' "$old_sha..$new_sha")
+        git -C "$OUTER_DIR" add shared
+        git -C "$OUTER_DIR" commit -m "bump shared
+
+$summary"
+        log_info "Shared bumped to $(git -C "$SHARED_DIR" rev-parse --short HEAD)"
+    else
+        log_skip "Shared already up to date"
+    fi
+fi
 
 # --- Init ---
 if should_run INIT; then
