@@ -34,8 +34,28 @@ alias path='echo $PATH'
 alias cp='cp -v'
 alias mv='mv -v'
 
-# Generate UUID and copy to clipboard
-alias uuid="uuidgen | tr -d '\n' | tr '[:upper:]' '[:lower:]'  | pbcopy && pbpaste && echo"
+# Inside tmux, route pbcopy to the local clipboard via an OSC 52 escape
+# sequence (tmux forwards it to the outer terminal). Outside tmux, fall
+# back to native pbcopy on macOS, or bare OSC 52 elsewhere.
+pbcopy() {
+  if [[ -n "$TMUX" ]]; then
+    printf '\033Ptmux;\033\033]52;c;%s\007\033\\' "$(base64 | tr -d '\n')" > /dev/tty
+  elif [[ -x /usr/bin/pbcopy ]]; then
+    /usr/bin/pbcopy
+  else
+    printf '\033]52;c;%s\007' "$(base64 | tr -d '\n')" > /dev/tty
+  fi
+}
+
+# Generate a UUID, copy it to the clipboard, and print it. Uses a captured
+# value instead of pbpaste so it works on remote hosts (where the OSC 52
+# pbcopy above has no paste counterpart).
+uuid() {
+  local id
+  id=$(uuidgen | tr -d '\n' | tr '[:upper:]' '[:lower:]')
+  printf '%s' "$id" | pbcopy
+  printf '%s\n' "$id"
+}
 alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 
 alias k="kubectl"
