@@ -34,6 +34,10 @@ alias path='echo $PATH'
 alias cp='cp -v'
 alias mv='mv -v'
 
+# Drop any stale aliases so re-sourcing this file can redefine these as
+# functions (zsh errors on `name()` if `name` is currently an alias).
+unalias pbcopy uuid 2>/dev/null
+
 # Inside tmux, route pbcopy to the local clipboard via an OSC 52 escape
 # sequence (tmux forwards it to the outer terminal). Outside tmux, fall
 # back to native pbcopy on macOS, or bare OSC 52 elsewhere.
