@@ -36,7 +36,6 @@ Options:
   --homebrew        Install Homebrew and run brew bundle
   --symlinks        Clean up broken symlinks and link dotfiles
   --antidote        Install the Antidote zsh plugin manager
-  --dotnet          Register side-by-side dotnet SDKs from Homebrew
   --macos           Apply macOS defaults (Dock, .osx)
   --ssh             Configure sshd PATH for non-interactive sessions
   --et              Start Eternal Terminal server at login
@@ -59,7 +58,6 @@ RUN_INIT=0
 RUN_HOMEBREW=0
 RUN_SYMLINKS=0
 RUN_ANTIDOTE=0
-RUN_DOTNET=0
 RUN_MACOS=0
 RUN_SSH=0
 RUN_ET=0
@@ -77,7 +75,6 @@ for arg in "$@"; do
         --homebrew)    RUN_HOMEBREW=1;  RUN_ALL=0 ;;
         --symlinks)    RUN_SYMLINKS=1;  RUN_ALL=0 ;;
         --antidote)    RUN_ANTIDOTE=1;  RUN_ALL=0 ;;
-        --dotnet)      RUN_DOTNET=1;    RUN_ALL=0 ;;
         --macos)       RUN_MACOS=1;     RUN_ALL=0 ;;
         --ssh)         RUN_SSH=1;       RUN_ALL=0 ;;
         --et)          RUN_ET=1;        RUN_ALL=0 ;;
@@ -242,30 +239,6 @@ if should_run HOMEBREW; then
     log_action "Cleaning up old versions..."
     brew cleanup
     log_info "Homebrew packages up to date"
-fi
-
-# --- Dotnet SDKs ---
-if should_run DOTNET; then
-    log_section "Dotnet SDKs"
-    log_action "Registering side-by-side dotnet SDKs..."
-    DOTNET_MAIN="/opt/homebrew/opt/dotnet/libexec"
-    for versioned in /opt/homebrew/opt/dotnet@*/libexec; do
-        [ "$versioned" = "$DOTNET_MAIN" ] && continue
-        for sdk in "$versioned/sdk/"*/; do
-            [ -d "$sdk" ] && ln -sfn "$sdk" "$DOTNET_MAIN/sdk/$(basename "$sdk")"
-        done
-        for host in "$versioned/host/fxr/"*/; do
-            [ -d "$host" ] && ln -sfn "$host" "$DOTNET_MAIN/host/fxr/$(basename "$host")"
-        done
-        for shared in "$versioned/shared/"*/; do
-            [ -d "$shared" ] || continue
-            framework=$(basename "$shared")
-            for ver in "$shared"*/; do
-                [ -d "$ver" ] && mkdir -p "$DOTNET_MAIN/shared/$framework" && ln -sfn "$ver" "$DOTNET_MAIN/shared/$framework/$(basename "$ver")"
-            done
-        done
-    done
-    log_info "Dotnet SDKs registered"
 fi
 
 # --- macOS defaults (.osx) ---
