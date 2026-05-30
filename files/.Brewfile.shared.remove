@@ -1,0 +1,3 @@
+# Packages to uninstall on every machine.
+# Same syntax as a Brewfile; bootstrap.sh runs `brew uninstall` on each entry.
+cask "zed"

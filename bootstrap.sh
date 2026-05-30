@@ -190,6 +190,42 @@ symlink_files() {
     done
 }
 
+# Uninstall packages listed in a removal Brewfile. `brew bundle` only installs;
+# this handles the inverse. Files use Brewfile syntax (`brew "x"` / `cask "x"`);
+# anything not currently installed is skipped quietly.
+brew_remove_bundle() {
+    local file="$1" line type name
+    [ -f "$file" ] || return 0
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%%#*}"                          # strip trailing comments
+        [[ "$line" =~ ^[[:space:]]*$ ]] && continue # skip blank lines
+        type=$(printf '%s' "$line" | awk '{print $1}')
+        name=$(printf '%s' "$line" | sed -nE 's/.*"([^"]+)".*/\1/p')
+        [ -z "$name" ] && continue
+        case "$type" in
+            cask)
+                if brew list --cask "$name" &>/dev/null; then
+                    log_action "Removing cask $name..."
+                    brew uninstall --cask "$name"
+                else
+                    log_skip "Cask $name not installed"
+                fi
+                ;;
+            brew)
+                if brew list --formula "$name" &>/dev/null; then
+                    log_action "Removing $name..."
+                    brew uninstall "$name"
+                else
+                    log_skip "$name not installed"
+                fi
+                ;;
+            *)
+                log_warn "Removal: skipping unsupported line ($line)"
+                ;;
+        esac
+    done < "$file"
+}
+
 # --- Symlinks ---
 if should_run SYMLINKS; then
     log_section "Symlinks"
@@ -236,6 +272,9 @@ if should_run HOMEBREW; then
     brew bundle --file=~/.Brewfile
     log_action "Running brew bundle (Brewfile.shared)..."
     brew bundle --file=~/.Brewfile.shared
+    log_action "Processing removal Brewfiles..."
+    brew_remove_bundle ~/.Brewfile.remove
+    brew_remove_bundle ~/.Brewfile.shared.remove
     log_action "Cleaning up old versions..."
     brew cleanup
     log_info "Homebrew packages up to date"
