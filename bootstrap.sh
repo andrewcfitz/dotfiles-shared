@@ -36,7 +36,8 @@ Options:
   --homebrew        Install Homebrew and run brew bundle
   --symlinks        Clean up broken symlinks and link dotfiles
   --antidote        Install the Antidote zsh plugin manager
-  --macos           Apply macOS defaults (Dock, .osx)
+  --macos           Apply macOS defaults (Dock, .osx); also runs
+                    bootstrap.local.macos.sh if present
   --ssh             Configure sshd PATH for non-interactive sessions
   --et              Start Eternal Terminal server at login
   --claude          Install Claude Code
@@ -285,6 +286,14 @@ if should_run MACOS; then
     log_action "Running .osx defaults script..."
     ~/.osx
     log_info "macOS defaults applied"
+
+    MACOS_LOCAL_HOOK="$DOTFILES_DIR/bootstrap.local.macos.sh"
+    if [ -f "$MACOS_LOCAL_HOOK" ]; then
+        log_action "Running $(basename "$MACOS_LOCAL_HOOK")..."
+        # shellcheck disable=SC1090
+        source "$MACOS_LOCAL_HOOK"
+        log_info "macOS local hook complete"
+    fi
 fi
 
 # --- SSH config ---
