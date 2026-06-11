@@ -19,5 +19,6 @@
     "coverage-gutters.showLineCoverage": true,
     "coverage-gutters.showRulerCoverage": true,
     "coverage-gutters.showGutterCoverage": true,
-    "claudeCode.preferredLocation": "panel"
+    "claudeCode.preferredLocation": "panel",
+    "scm.repositories.selectionMode": "single"
 }
