@@ -1,0 +1,11 @@
+{
+  "trustedtaps": [
+    "mistertea/et"
+  ],
+  "trustedformulae": [
+    "joachimbrindeau/ccusage-monitor/ccusage-monitor"
+  ],
+  "trustedcasks": [
+    "spacelift-io/spacelift/spacectl"
+  ]
+}
