@@ -267,6 +267,8 @@ fi
 
 # --- Homebrew packages ---
 if should_run HOMEBREW; then
+    # Run Homebrew non-interactively so upgrades don't stop to ask "[y/n]".
+    export NONINTERACTIVE=1
     log_action "Updating Homebrew..."
     brew update
     log_action "Upgrading all formulae and casks (--greedy)..."
