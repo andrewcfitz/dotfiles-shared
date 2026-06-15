@@ -1,13 +1,13 @@
 {
   "trustedtaps": [
-    "mistertea/et"
+    "mistertea/et",
+    "fluxcd/tap",
+    "loft-sh/tap",
+    "getsentry/tools",
+    "siderolabs/tap"
   ],
   "trustedformulae": [
-    "joachimbrindeau/ccusage-monitor/ccusage-monitor",
-    "fluxcd/tap/flux",
-    "loft-sh/tap/vcluster",
-    "getsentry/tools/sentry-cli",
-    "siderolabs/tap/talosctl"
+    "joachimbrindeau/ccusage-monitor/ccusage-monitor"
   ],
   "trustedcasks": [
     "spacelift-io/spacelift/spacectl"
