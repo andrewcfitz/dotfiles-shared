@@ -20,5 +20,6 @@
     "coverage-gutters.showRulerCoverage": true,
     "coverage-gutters.showGutterCoverage": true,
     "claudeCode.preferredLocation": "panel",
-    "scm.repositories.selectionMode": "single"
+    "scm.repositories.selectionMode": "single",
+    "debug.breakpointsView.presentation": "tree"
 }
