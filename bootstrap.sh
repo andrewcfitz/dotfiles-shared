@@ -227,6 +227,20 @@ brew_remove_bundle() {
     done < "$file"
 }
 
+# --- Antidote ---
+# Install before symlinks so the plugin manager is present when the shell
+# dotfiles (which source ~/.antidote) are linked into place.
+if should_run ANTIDOTE; then
+    log_section "Antidote"
+    if [ ! -d "${ZDOTDIR:-$HOME}/.antidote" ]; then
+        log_action "Installing Antidote zsh plugin manager..."
+        git clone --depth=1 https://github.com/mattmc3/antidote.git "${ZDOTDIR:-$HOME}/.antidote"
+        log_info "Antidote installed"
+    else
+        log_skip "Antidote already installed"
+    fi
+fi
+
 # --- Symlinks ---
 if should_run SYMLINKS; then
     log_section "Symlinks"
@@ -249,18 +263,6 @@ if should_run SYMLINKS; then
     ln -sfn "$HOME/.config/Code/User/settings.json" "$VSCODE_USER_DIR/settings.json"
 
     log_info "Symlinks up to date"
-fi
-
-# --- Antidote ---
-if should_run ANTIDOTE; then
-    log_section "Antidote"
-    if [ ! -d "$HOME/.antidote" ]; then
-        log_action "Installing Antidote zsh plugin manager..."
-        git clone --depth=1 https://github.com/mattmc3/antidote.git "${ZDOTDIR:-~}/.antidote"
-        log_info "Antidote installed"
-    else
-        log_skip "Antidote already installed"
-    fi
 fi
 
 # --- Homebrew packages ---
