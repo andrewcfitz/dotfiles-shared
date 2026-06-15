@@ -4,12 +4,8 @@
     "fluxcd/tap",
     "loft-sh/tap",
     "getsentry/tools",
-    "siderolabs/tap"
-  ],
-  "trustedformulae": [
-    "joachimbrindeau/ccusage-monitor/ccusage-monitor"
-  ],
-  "trustedcasks": [
-    "spacelift-io/spacelift/spacectl"
+    "siderolabs/tap",
+    "joachimbrindeau/ccusage-monitor",
+    "spacelift-io/spacelift"
   ]
 }
