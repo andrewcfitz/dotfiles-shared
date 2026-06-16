@@ -1,0 +1,4 @@
+[submodule "skills/avoid-ai-writing"]
+	path = skills/avoid-ai-writing
+	url = https://github.com/conorbronsdon/avoid-ai-writing
+	branch = main

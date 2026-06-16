@@ -115,6 +115,24 @@ if [ "$RUN_PULL" -eq 1 ]; then
     old_sha=$(git -C "$SHARED_DIR" rev-parse HEAD)
     log_action "Pulling shared..."
     git -C "$SHARED_DIR" pull --rebase --autostash
+
+    # Pull the avoid-ai-writing skill submodule (tracks main) to its latest
+    # upstream commit and, if it moved, commit the pointer bump inside shared.
+    # Done before new_sha is read below so it rolls up into the shared bump.
+    if git -C "$SHARED_DIR" config --file .gitmodules --get submodule.skills/avoid-ai-writing.url >/dev/null 2>&1; then
+        skill_old=$(git -C "$SHARED_DIR" rev-parse HEAD:skills/avoid-ai-writing 2>/dev/null || echo none)
+        log_action "Pulling avoid-ai-writing skill..."
+        git -C "$SHARED_DIR" submodule update --init --remote --merge skills/avoid-ai-writing
+        skill_new=$(git -C "$SHARED_DIR/skills/avoid-ai-writing" rev-parse HEAD)
+        if [ "$skill_old" != "$skill_new" ]; then
+            git -C "$SHARED_DIR" add skills/avoid-ai-writing
+            git -C "$SHARED_DIR" commit -m "bump avoid-ai-writing skill"
+            log_info "avoid-ai-writing skill bumped to $(git -C "$SHARED_DIR/skills/avoid-ai-writing" rev-parse --short HEAD)"
+        else
+            log_skip "avoid-ai-writing skill already up to date"
+        fi
+    fi
+
     new_sha=$(git -C "$SHARED_DIR" rev-parse HEAD)
 
     if [ "$old_sha" != "$new_sha" ]; then
@@ -335,6 +353,24 @@ if should_run CLAUDE; then
         log_info "Claude Code installed"
     else
         log_skip "Claude Code already installed"
+    fi
+
+    # avoid-ai-writing skill, vendored as a submodule of shared (tracks main;
+    # pulled via --pull). Ensure it's checked out, then point ~/.claude/skills
+    # at its canonical skill dir. Whole-dir symlink: the source lives outside
+    # files/, so the normal per-file symlink pass doesn't cover it.
+    SKILL_SRC="$DOTFILES_DIR/skills/avoid-ai-writing"
+    if [ ! -e "$SKILL_SRC/SKILL.md" ]; then
+        log_action "Initializing avoid-ai-writing submodule..."
+        git -C "$DOTFILES_DIR" submodule update --init skills/avoid-ai-writing
+    fi
+    SKILL_LINK="$SKILL_SRC/plugins/avoid-ai-writing/skills/avoid-ai-writing"
+    if [ -d "$SKILL_LINK" ]; then
+        mkdir -p "$HOME/.claude/skills"
+        ln -sfn "$SKILL_LINK" "$HOME/.claude/skills/avoid-ai-writing"
+        log_info "avoid-ai-writing skill linked"
+    else
+        log_warn "avoid-ai-writing skill dir missing; skipping symlink"
     fi
 fi
 
