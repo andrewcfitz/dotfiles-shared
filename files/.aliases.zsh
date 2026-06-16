@@ -51,6 +51,17 @@ pbcopy() {
   fi
 }
 
+# Copy the entire scrollback of the current tmux pane to the clipboard via
+# pbcopy above. -S - starts at the top of the history, -J unwraps long lines
+# so they aren't broken at the pane width. Bounded by tmux's history-limit.
+pbwindow() {
+  if [[ -z "$TMUX" ]]; then
+    printf 'pbwindow: not inside a tmux session\n' >&2
+    return 1
+  fi
+  tmux capture-pane -pJS - | pbcopy
+}
+
 # Generate a UUID, copy it to the clipboard, and print it. Uses a captured
 # value instead of pbpaste so it works on remote hosts (where the OSC 52
 # pbcopy above has no paste counterpart).
