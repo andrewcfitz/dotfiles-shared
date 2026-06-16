@@ -362,10 +362,16 @@ if should_run CLAUDE; then
     # pulled via --pull). Ensure it's checked out, then point ~/.claude/skills
     # at its canonical skill dir. Whole-dir symlink: the source lives outside
     # files/, so the normal per-file symlink pass doesn't cover it.
-    SKILL_SRC="$DOTFILES_DIR/skills/avoid-ai-writing"
+    # DOTFILES_DIR may be the outer repo (bootstrap.sh is a symlink at its root),
+    # so resolve the shared dir that actually holds the submodule.
+    SHARED_BASE="$DOTFILES_DIR"
+    if [ "$(basename "$SHARED_BASE")" != "shared" ] && [ -d "$SHARED_BASE/shared" ]; then
+        SHARED_BASE="$SHARED_BASE/shared"
+    fi
+    SKILL_SRC="$SHARED_BASE/skills/avoid-ai-writing"
     if [ ! -e "$SKILL_SRC/SKILL.md" ]; then
         log_action "Initializing avoid-ai-writing submodule..."
-        git -C "$DOTFILES_DIR" submodule update --init skills/avoid-ai-writing
+        git -C "$SHARED_BASE" submodule update --init skills/avoid-ai-writing
     fi
     SKILL_LINK="$SKILL_SRC/plugins/avoid-ai-writing/skills/avoid-ai-writing"
     if [ -d "$SKILL_LINK" ]; then
