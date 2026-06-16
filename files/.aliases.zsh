@@ -51,15 +51,28 @@ pbcopy() {
   fi
 }
 
-# Copy the entire scrollback of the current tmux pane to the clipboard via
-# pbcopy above. -S - starts at the top of the history, -J unwraps long lines
-# so they aren't broken at the pane width. Bounded by tmux's history-limit.
+# Copy the current tmux pane's scrollback to the clipboard via pbcopy above.
+# -S - grabs from the top of history, -J unwraps long lines. The awk pass
+# drops everything from the pbwindow invocation line onward (plus any trailing
+# blank lines) so the command that triggered the copy isn't included; it cuts
+# at the last "pbwindow" match, which is always the invocation at the bottom,
+# leaving earlier legitimate mentions intact. Bounded by tmux's history-limit.
+# Only works inside tmux -- terminal scrollback isn't reachable from the shell
+# outside a multiplexer.
 pbwindow() {
   if [[ -z "$TMUX" ]]; then
-    printf 'pbwindow: not inside a tmux session\n' >&2
+    printf 'pbwindow: only works inside tmux (terminal scrollback is not reachable otherwise)\n' >&2
     return 1
   fi
-  tmux capture-pane -pJS - | pbcopy
+  tmux capture-pane -pJS - | awk '
+    { lines[NR] = $0 }
+    /pbwindow/ { cut = NR }
+    END {
+      end = cut ? cut - 1 : NR
+      while (end > 0 && lines[end] == "") end--
+      for (i = 1; i <= end; i++) print lines[i]
+    }
+  ' | pbcopy
 }
 
 # Generate a UUID, copy it to the clipboard, and print it. Uses a captured
