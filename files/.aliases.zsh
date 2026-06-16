@@ -88,7 +88,6 @@ alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 
 alias k="kubectl"
 
-alias axon="clear && cd ~/workspace/evolution/axon/"
 alias ws="clear && cd ~/workspace/"
 rp() {
   local resolved
