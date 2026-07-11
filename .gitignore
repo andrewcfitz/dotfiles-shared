@@ -3,3 +3,4 @@ files/.aws/config
 .DS_Store
 *.swp
 docs/**
+iterm2/
