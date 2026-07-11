@@ -21,5 +21,14 @@
     "scm.repositories.selectionMode": "single",
     "debug.breakpointsView.presentation": "tree",
     "scm.defaultViewMode": "tree",
-    "hediet.vscode-drawio.resizeImages": null
+    "hediet.vscode-drawio.resizeImages": null,
+    "yaml.disableSchemaDetection": [
+        "**/.github/workflows/*.yml",
+        "**/.github/workflows/*.yaml",
+        "**/.gitea/workflows/*.yml",
+        "**/.gitea/workflows/*.yaml",
+        "**/.forgejo/workflows/*.yml",
+        "**/.forgejo/workflows/*.yaml"
+    ],
+    "githubPullRequests.pullBranch": "never"
 }

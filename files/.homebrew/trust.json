@@ -7,5 +7,8 @@
     "siderolabs/tap",
     "joachimbrindeau/ccusage-monitor",
     "spacelift-io/spacelift"
+  ],
+  "trustedformulae": [
+    "stass/tap/blew"
   ]
 }
