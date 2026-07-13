@@ -93,6 +93,15 @@ should_run() {
 
 DOTFILES_DIR=$(cd "$(dirname "$0")" && pwd -P)
 
+# Resolve the outer (top-level) dotfiles repo and its shared submodule dir.
+# When run via the bootstrap.sh symlink at a repo root, DOTFILES_DIR is
+# already the outer repo. When run directly from within shared/, walk up.
+OUTER_DIR="$DOTFILES_DIR"
+if [ "$(basename "$OUTER_DIR")" = "shared" ]; then
+    OUTER_DIR="$(dirname "$OUTER_DIR")"
+fi
+SHARED_DIR="$OUTER_DIR/shared"
+
 # --- Pull repos ---
 # Opt-in only: never runs as part of bare `bootstrap.sh`. Pulls the outer
 # (main) dotfiles repo and the `shared` submodule on its tracked branch. If
@@ -100,14 +109,6 @@ DOTFILES_DIR=$(cd "$(dirname "$0")" && pwd -P)
 # summarizing the included shared commits.
 if [ "$RUN_PULL" -eq 1 ]; then
     log_section "Pull"
-
-    # Resolve the outer repo. When run via the bootstrap.sh symlink at the
-    # repo root, DOTFILES_DIR resolves to shared/. Walk up if so.
-    OUTER_DIR="$DOTFILES_DIR"
-    if [ "$(basename "$OUTER_DIR")" = "shared" ]; then
-        OUTER_DIR="$(dirname "$OUTER_DIR")"
-    fi
-    SHARED_DIR="$OUTER_DIR/shared"
 
     log_action "Pulling $(basename "$OUTER_DIR")..."
     git -C "$OUTER_DIR" pull --rebase --autostash
@@ -362,16 +363,10 @@ if should_run CLAUDE; then
     # pulled via --pull). Ensure it's checked out, then point ~/.claude/skills
     # at its canonical skill dir. Whole-dir symlink: the source lives outside
     # files/, so the normal per-file symlink pass doesn't cover it.
-    # DOTFILES_DIR may be the outer repo (bootstrap.sh is a symlink at its root),
-    # so resolve the shared dir that actually holds the submodule.
-    SHARED_BASE="$DOTFILES_DIR"
-    if [ "$(basename "$SHARED_BASE")" != "shared" ] && [ -d "$SHARED_BASE/shared" ]; then
-        SHARED_BASE="$SHARED_BASE/shared"
-    fi
-    SKILL_SRC="$SHARED_BASE/skills/avoid-ai-writing"
+    SKILL_SRC="$SHARED_DIR/skills/avoid-ai-writing"
     if [ ! -e "$SKILL_SRC/SKILL.md" ]; then
         log_action "Initializing avoid-ai-writing submodule..."
-        git -C "$SHARED_BASE" submodule update --init skills/avoid-ai-writing
+        git -C "$SHARED_DIR" submodule update --init skills/avoid-ai-writing
     fi
     SKILL_LINK="$SKILL_SRC/plugins/avoid-ai-writing/skills/avoid-ai-writing"
     if [ -d "$SKILL_LINK" ]; then
