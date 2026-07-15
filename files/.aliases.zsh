@@ -98,6 +98,8 @@ rp() {
 alias dotfiles="clear && cd ~/workspace/dotfiles/"
 alias bootstrap="(cd ~/workspace/dotfiles && ./bootstrap.sh)"
 
+alias ccusage-today='ccusage daily -b -s $(date +%Y%m%d) -u $(date +%Y%m%d)'
+
 alias build="docker compose build"
 alias up="docker compose up"
 alias upd="docker compose up -d"
