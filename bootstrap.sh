@@ -293,12 +293,17 @@ if should_run HOMEBREW; then
     export HOMEBREW_NO_ASK=1
     log_action "Updating Homebrew..."
     brew update
+    # A single broken download (e.g. a cask whose upstream URL 404/403s) makes
+    # `brew upgrade` and `brew bundle` exit nonzero. Under `set -e` that would
+    # abort the whole run and skip everything below, including installing new
+    # packages. Keep going on failure and warn instead, so one bad package
+    # doesn't block the rest.
     log_action "Upgrading all formulae and casks (--greedy)..."
-    brew upgrade --greedy
+    brew upgrade --greedy || log_warn "brew upgrade had failures (continuing)"
     log_action "Running brew bundle (Brewfile)..."
-    brew bundle --file=~/.Brewfile
+    brew bundle --file=~/.Brewfile || log_warn "brew bundle (Brewfile) had failures (continuing)"
     log_action "Running brew bundle (Brewfile.shared)..."
-    brew bundle --file=~/.Brewfile.shared
+    brew bundle --file=~/.Brewfile.shared || log_warn "brew bundle (Brewfile.shared) had failures (continuing)"
     log_action "Processing removal Brewfiles..."
     brew_remove_bundle ~/.Brewfile.remove
     brew_remove_bundle ~/.Brewfile.shared.remove
