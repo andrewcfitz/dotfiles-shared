@@ -167,6 +167,11 @@ ignore_base = false
 symbol = "  "
 style = "fg:crust bg:sapphire"
 format = '[$symbol($profile) ]($style)'
+# Without this, starship only renders a profile that defines credentials,
+# credential_process or sso_start_url. The digital-* profiles use login_session
+# (aws login) and role_arn/source_profile, neither of which starship recognises,
+# so they rendered nothing. Still renders empty when no profile is set.
+force_display = true
 
 [time]
 disabled = false
