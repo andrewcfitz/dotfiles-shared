@@ -5,6 +5,8 @@ export PATH="$PATH:$HOME/workspace/dotfiles/shared/bin"
 export PATH="$PATH:$HOME/.local/bin"
 export PATH="$HOMEBREW_PREFIX/opt/gnu-sed/libexec/gnubin:$PATH"
 
+export AWS_PAGER=""
+
 (fix-claude-symlinks &) >/dev/null 2>&1
 
 fpath=(/Applications/Docker.app/Contents/Resources/etc $fpath)
