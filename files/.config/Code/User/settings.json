@@ -40,5 +40,8 @@
         "https://raw.githubusercontent.com/microsoft/vscode/": true,
         "https://schemastore.azurewebsites.net/": true,
         "https://www.schemastore.org/": true
-    }
+    },
+    "workbench.colorTheme": "JITX Colors",
+    "vscode-mcp-server.port": 3123,
+    "vscode-mcp-server.defaultEnabled": true
 }
