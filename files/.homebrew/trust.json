@@ -5,7 +5,6 @@
     "loft-sh/tap",
     "getsentry/tools",
     "siderolabs/tap",
-    "joachimbrindeau/ccusage-monitor",
     "spacelift-io/spacelift"
   ],
   "trustedformulae": [
