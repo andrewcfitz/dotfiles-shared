@@ -22,6 +22,7 @@ $python\
 [](fg:green bg:sapphire)\
 $conda\
 $aws\
+${custom.aws_sso}\
 [](fg:sapphire bg:lavender)\
 $time\
 [ ](fg:lavender)\
@@ -172,6 +173,17 @@ format = '[$symbol($profile) ]($style)'
 # (aws login) and role_arn/source_profile, neither of which starship recognises,
 # so they rendered nothing. Still renders empty when no profile is set.
 force_display = true
+
+[custom.aws_sso]
+description = "Checkmark when $AWS_PROFILE's SSO session token is valid"
+# aws-sso-status (dotfiles bin) exits 0 only when AWS_PROFILE is set and its
+# sso-session token is unexpired; the aws module already renders the profile
+# name, so this just appends the ✓. Logged out / no profile -> no segment.
+# The command -v guard keeps machines without the script rendering nothing.
+when = "command -v aws-sso-status >/dev/null && aws-sso-status >/dev/null"
+style = "fg:crust bg:sapphire"
+format = '[[✓ ]($style)]($style)'
+shell = ["bash", "--noprofile", "--norc"]
 
 [time]
 disabled = false
