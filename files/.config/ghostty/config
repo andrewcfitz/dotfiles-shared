@@ -3,3 +3,12 @@ theme = dark:Dracula,light:Dracula
 working-directory = ~/workspace
 keybind = cmd+k=text:\x0b
 desktop-notifications = true
+
+# Ghostty opens URLs on cmd+click (see `link-url`), which works under tmux.
+# This setting is about selection, not links: with tmux mouse mode on, tmux
+# grabs drags. `never` keeps shift+drag as Ghostty-native text selection and
+# stops tmux reclaiming it via XTSHIFTESCAPE.
+mouse-shift-capture = never
+
+# Escape hatch: fully disable mouse reporting when you want a burst of clicking.
+keybind = super+shift+m=toggle_mouse_reporting
