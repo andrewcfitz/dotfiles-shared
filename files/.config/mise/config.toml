@@ -1,2 +1,5 @@
 [settings]
 trusted_config_paths = ["~/workspace"]
+
+[tools]
+go = "1.22.7"
