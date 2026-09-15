@@ -8,6 +8,10 @@
     "spacelift-io/spacelift"
   ],
   "trustedformulae": [
+    "fluxcd/tap/flux",
+    "getsentry/tools/sentry-cli",
+    "loft-sh/tap/vcluster",
+    "siderolabs/tap/talosctl",
     "stass/tap/blew"
   ]
 }
