@@ -4,7 +4,11 @@ Any time I point you at a Linear issue, read its activity before acting on it �
 
 ## Assignment guard
 
-If the status name starts with "In" — In Progress, In Review, In Test — confirm the card is assigned to me before doing any work on it. Unassigned, or assigned to someone else: stop and tell me. Don't start, and don't set the assignee yourself; that needs an explicit yes from me every time.
+If the status name starts with "In" — In Progress, In Review, In Test — check the assignee before doing any work on it.
+
+- **Assigned to me:** go ahead.
+- **Unassigned:** assign it to me (resolve my user via `get_user` with `me`, then `save_issue`), say you did, and carry on. No need to ask.
+- **Assigned to someone else:** stop and tell me. Don't start, and don't reassign it — taking a card off someone else needs an explicit yes from me every time.
 
 Ask rather than guess when:
 
