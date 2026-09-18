@@ -175,14 +175,23 @@ format = '[$symbol($profile) ]($style)'
 force_display = true
 
 [custom.aws_sso]
-description = "Checkmark when $AWS_PROFILE's SSO session token is valid"
-# aws-sso-status (dotfiles bin) exits 0 only when AWS_PROFILE is set and its
-# sso-session token is unexpired; the aws module already renders the profile
-# name, so this just appends the ✓. Logged out / no profile -> no segment.
-# The command -v guard keeps machines without the script rendering nothing.
+description = "Checkmark and time left on $AWS_PROFILE's session token"
+# aws-sso-status (dotfiles bin) exits 0 when AWS_PROFILE names a usable
+# session and prints how long it has left. The aws module already renders the
+# profile name, so this appends "✓ (4h12m)" while the access token is live, or
+# "✓ (↻)" once it has lapsed but can still be refreshed without a browser. The
+# ↻ carries no countdown on purpose: the deadline that matters is the Identity
+# Center session duration, which never reaches disk. Logged out / no profile ->
+# no segment. The command -v guard keeps machines without the script rendering
+# nothing.
+#
+# `when` re-runs the script instead of gating on $output alone: a failed
+# command still renders the module, which would leave a bare "✓ ()" in every
+# logged-out shell. Both runs are a couple of small file reads, no aws call.
+command = "aws-sso-status"
 when = "command -v aws-sso-status >/dev/null && aws-sso-status >/dev/null"
 style = "fg:crust bg:sapphire"
-format = '[[✓ ]($style)]($style)'
+format = '[[✓( \($output\)) ]($style)]($style)'
 shell = ["bash", "--noprofile", "--norc"]
 
 [time]
