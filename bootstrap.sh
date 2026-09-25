@@ -42,7 +42,8 @@ Options:
   --et              Start Eternal Terminal server at login
   --claude          Install Claude Code
   --iterm           Install iTerm2 AI plugin
-  --tmux            Install tmux plugin manager (TPM) and plugins
+  --tmux            Rebuild tmux with an embedded Info.plist (macOS
+                    Local Network fix); install TPM and plugins
   --local           Run repo-local bootstrap.local.sh if present
 
 Examples:
@@ -396,6 +397,64 @@ if should_run ITERM; then
         log_info "iTerm2 AI plugin installed"
     else
         log_skip "iTerm2 AI plugin already installed"
+    fi
+fi
+
+# --- tmux rebuild with embedded Info.plist ---
+# macOS Local Network Privacy appears to check the whole parent chain: an
+# unsigned tool run under Homebrew's bundle-less tmux gets "no route to host"
+# for LAN addresses. Relinking tmux with an __info_plist section gives it a
+# bundle identity macOS can grant access to. Rebuilt from the same source and
+# flags as the Homebrew formula, then swapped into the Cellar. `brew upgrade`
+# puts the stock binary back, so the section check makes this rerun as needed.
+# https://colosieve.com/posts/fixing-tmux-local-network-privacy-macos/
+if should_run TMUX && [ "$(uname)" = "Darwin" ] && brew list --formula tmux &>/dev/null; then
+    log_section "tmux local network fix"
+    TMUX_BIN="$(brew --prefix tmux)/bin/tmux"
+    TMUX_BIN="$(cd "$(dirname "$TMUX_BIN")" && pwd -P)/tmux"
+    if otool -l "$TMUX_BIN" | grep -q __info_plist; then
+        log_skip "tmux already has an embedded Info.plist"
+    else
+        TMUX_VERSION=$(brew list --versions tmux | awk '{print $2}')
+        TMUX_CELLAR=$(dirname "$(dirname "$TMUX_BIN")")
+        TMUX_BUILD=$(mktemp -d)
+        log_action "Fetching tmux $TMUX_VERSION source..."
+        brew fetch --build-from-source --quiet tmux
+        tar -xzf "$(brew --cache --build-from-source tmux)" -C "$TMUX_BUILD" --strip-components=1
+        cat > "$TMUX_BUILD/Info.plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.github.tmux</string>
+    <key>CFBundleName</key>
+    <string>tmux</string>
+    <key>CFBundleVersion</key>
+    <string>$TMUX_VERSION</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>tmux needs access to the local network to manage terminal sessions.</string>
+</dict>
+</plist>
+EOF
+        log_action "Building tmux $TMUX_VERSION..."
+        (
+            cd "$TMUX_BUILD"
+            export PKG_CONFIG_PATH="$(brew --prefix libevent)/lib/pkgconfig:$(brew --prefix ncurses)/lib/pkgconfig:$(brew --prefix utf8proc)/lib/pkgconfig:$(brew --prefix jemalloc)/lib/pkgconfig"
+            ./configure --prefix="$TMUX_CELLAR" --sysconfdir="$(brew --prefix)/etc" \
+                --enable-sixel --enable-utf8proc \
+                LDFLAGS="-Wl,-sectcreate,__TEXT,__info_plist,$TMUX_BUILD/Info.plist"
+            make -j"$(sysctl -n hw.ncpu)"
+        ) >"$TMUX_BUILD/build.log" 2>&1 || { tail -30 "$TMUX_BUILD/build.log"; log_error "tmux build failed"; exit 1; }
+        otool -l "$TMUX_BUILD/tmux" | grep -q __info_plist || { log_error "Info.plist not embedded in tmux build"; exit 1; }
+        codesign -s - -f "$TMUX_BUILD/tmux" 2>/dev/null
+        # Stage next to the target and rename: overwriting a running binary in
+        # place invalidates its code signature pages and kills live servers.
+        cp "$TMUX_BUILD/tmux" "$TMUX_BIN.new"
+        mv -f "$TMUX_BIN.new" "$TMUX_BIN"
+        rm -rf "$TMUX_BUILD"
+        log_info "tmux rebuilt with Info.plist ($(codesign -dv "$TMUX_BIN" 2>&1 | grep '^Identifier='))"
+        log_warn "Run 'tmux kill-server' so new sessions use the rebuilt binary"
     fi
 fi
 
