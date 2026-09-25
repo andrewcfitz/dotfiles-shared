@@ -39,7 +39,8 @@ Options:
   --macos           Apply macOS defaults (Dock, .osx); also runs
                     bootstrap.local.macos.sh if present
   --ssh             Configure sshd PATH for non-interactive sessions
-  --et              Start Eternal Terminal server at login
+  --et              Rebuild etterminal with an embedded Info.plist (macOS
+                    Local Network fix); start ET server at login
   --claude          Install Claude Code
   --iterm           Install iTerm2 AI plugin
   --tmux            Rebuild tmux with an embedded Info.plist (macOS
@@ -247,6 +248,49 @@ brew_remove_bundle() {
     done < "$file"
 }
 
+# macOS Local Network Privacy appears to check a tool's whole parent chain:
+# anything run under a bundle-less Homebrew binary (tmux, etterminal) gets
+# "no route to host" for LAN addresses, while Apple's own tools work. Relinking
+# those binaries with an embedded __info_plist gives them a bundle identity
+# macOS can grant access to. `brew upgrade` puts stock binaries back, so the
+# callers check for the section and rebuild as needed.
+# https://colosieve.com/posts/fixing-tmux-local-network-privacy-macos/
+has_info_plist() {
+    otool -l "$1" | grep -q __info_plist
+}
+
+# write_info_plist <path> <bundle id> <name> <version> <usage description>
+write_info_plist() {
+    cat > "$1" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>$2</string>
+    <key>CFBundleName</key>
+    <string>$3</string>
+    <key>CFBundleVersion</key>
+    <string>$4</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>$5</string>
+</dict>
+</plist>
+EOF
+}
+
+# install_plist_binary <built binary> <installed binary>
+install_plist_binary() {
+    local built="$1" target="$2"
+    has_info_plist "$built" || { log_error "Info.plist not embedded in $built"; exit 1; }
+    codesign -s - -f "$built" 2>/dev/null
+    # Stage next to the target and rename: overwriting a running binary in
+    # place invalidates its code signature pages and kills live processes.
+    cp "$built" "$target.new"
+    mv -f "$target.new" "$target"
+    log_info "$(basename "$target") rebuilt with Info.plist ($(codesign -dv "$target" 2>&1 | grep '^Identifier='))"
+}
+
 # --- Antidote ---
 # Install before symlinks so the plugin manager is present when the shell
 # dotfiles (which source ~/.antidote) are linked into place.
@@ -349,6 +393,38 @@ if should_run ET; then
         brew reinstall --build-from-source et
         log_info "et rebuilt"
     fi
+    if [ "$(uname)" = "Darwin" ] && brew list --formula et &>/dev/null; then
+        ETTERMINAL_BIN="$(cd "$(brew --prefix et)/bin" && pwd -P)/etterminal"
+        if has_info_plist "$ETTERMINAL_BIN"; then
+            log_skip "etterminal already has an embedded Info.plist"
+        else
+            ET_VERSION=$(brew list --versions et | awk '{print $2}')
+            ET_BUILD=$(mktemp -d)
+            log_action "Building etterminal $ET_VERSION with Info.plist..."
+            brew fetch --build-from-source --quiet et
+            tar -xzf "$(brew --cache --build-from-source et)" -C "$ET_BUILD" --strip-components=1
+            write_info_plist "$ET_BUILD/Info.plist" com.github.mistertea.etterminal etterminal "${ET_VERSION%%_*}" \
+                "Eternal Terminal sessions run tools that access the local network."
+            # Mirrors the Homebrew formula's flags. Only etterminal is rebuilt:
+            # it's the parent of every ET session's shell. etserver runs as a
+            # root daemon, which Local Network Privacy doesn't apply to.
+            BREW_PREFIX=$(brew --prefix)
+            (
+                cd "$ET_BUILD"
+                cmake -S . -B build \
+                    -DDISABLE_VCPKG=ON -DDISABLE_SENTRY=ON -DDISABLE_TELEMETRY=ON -DBUILD_TESTING=OFF \
+                    -DPYTHON_EXECUTABLE="$(command -v python3)" -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_PREFIX_PATH="$BREW_PREFIX/opt/abseil;$BREW_PREFIX/opt/protobuf;$BREW_PREFIX/opt/libsodium;$BREW_PREFIX/opt/openssl@4" \
+                    -DCMAKE_C_FLAGS="-DNDEBUG" \
+                    -DCMAKE_CXX_FLAGS="-DNDEBUG -I$BREW_PREFIX/opt/abseil/include" \
+                    -DCMAKE_EXE_LINKER_FLAGS="-Wl,-dead_strip_dylibs -Wl,-sectcreate,__TEXT,__info_plist,$ET_BUILD/Info.plist"
+                cmake --build build --target etterminal -j"$(sysctl -n hw.ncpu)"
+            ) >"$ET_BUILD/build.log" 2>&1 || { tail -30 "$ET_BUILD/build.log"; log_error "etterminal build failed"; exit 1; }
+            install_plist_binary "$ET_BUILD/build/etterminal" "$ETTERMINAL_BIN"
+            rm -rf "$ET_BUILD"
+            log_warn "Reconnect ET sessions so they use the rebuilt etterminal"
+        fi
+    fi
     log_action "Starting et service..."
     sudo brew services start et
     log_info "Eternal Terminal service started"
@@ -401,43 +477,21 @@ if should_run ITERM; then
 fi
 
 # --- tmux rebuild with embedded Info.plist ---
-# macOS Local Network Privacy appears to check the whole parent chain: an
-# unsigned tool run under Homebrew's bundle-less tmux gets "no route to host"
-# for LAN addresses. Relinking tmux with an __info_plist section gives it a
-# bundle identity macOS can grant access to. Rebuilt from the same source and
-# flags as the Homebrew formula, then swapped into the Cellar. `brew upgrade`
-# puts the stock binary back, so the section check makes this rerun as needed.
-# https://colosieve.com/posts/fixing-tmux-local-network-privacy-macos/
 if should_run TMUX && [ "$(uname)" = "Darwin" ] && brew list --formula tmux &>/dev/null; then
     log_section "tmux local network fix"
-    TMUX_BIN="$(brew --prefix tmux)/bin/tmux"
-    TMUX_BIN="$(cd "$(dirname "$TMUX_BIN")" && pwd -P)/tmux"
-    if otool -l "$TMUX_BIN" | grep -q __info_plist; then
+    TMUX_BIN="$(cd "$(brew --prefix tmux)/bin" && pwd -P)/tmux"
+    if has_info_plist "$TMUX_BIN"; then
         log_skip "tmux already has an embedded Info.plist"
     else
         TMUX_VERSION=$(brew list --versions tmux | awk '{print $2}')
         TMUX_CELLAR=$(dirname "$(dirname "$TMUX_BIN")")
         TMUX_BUILD=$(mktemp -d)
-        log_action "Fetching tmux $TMUX_VERSION source..."
+        log_action "Building tmux $TMUX_VERSION with Info.plist..."
         brew fetch --build-from-source --quiet tmux
         tar -xzf "$(brew --cache --build-from-source tmux)" -C "$TMUX_BUILD" --strip-components=1
-        cat > "$TMUX_BUILD/Info.plist" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleIdentifier</key>
-    <string>com.github.tmux</string>
-    <key>CFBundleName</key>
-    <string>tmux</string>
-    <key>CFBundleVersion</key>
-    <string>$TMUX_VERSION</string>
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>tmux needs access to the local network to manage terminal sessions.</string>
-</dict>
-</plist>
-EOF
-        log_action "Building tmux $TMUX_VERSION..."
+        write_info_plist "$TMUX_BUILD/Info.plist" com.github.tmux tmux "$TMUX_VERSION" \
+            "tmux needs access to the local network to manage terminal sessions."
+        # Same source and flags as the Homebrew formula.
         (
             cd "$TMUX_BUILD"
             export PKG_CONFIG_PATH="$(brew --prefix libevent)/lib/pkgconfig:$(brew --prefix ncurses)/lib/pkgconfig:$(brew --prefix utf8proc)/lib/pkgconfig:$(brew --prefix jemalloc)/lib/pkgconfig"
@@ -446,14 +500,8 @@ EOF
                 LDFLAGS="-Wl,-sectcreate,__TEXT,__info_plist,$TMUX_BUILD/Info.plist"
             make -j"$(sysctl -n hw.ncpu)"
         ) >"$TMUX_BUILD/build.log" 2>&1 || { tail -30 "$TMUX_BUILD/build.log"; log_error "tmux build failed"; exit 1; }
-        otool -l "$TMUX_BUILD/tmux" | grep -q __info_plist || { log_error "Info.plist not embedded in tmux build"; exit 1; }
-        codesign -s - -f "$TMUX_BUILD/tmux" 2>/dev/null
-        # Stage next to the target and rename: overwriting a running binary in
-        # place invalidates its code signature pages and kills live servers.
-        cp "$TMUX_BUILD/tmux" "$TMUX_BIN.new"
-        mv -f "$TMUX_BIN.new" "$TMUX_BIN"
+        install_plist_binary "$TMUX_BUILD/tmux" "$TMUX_BIN"
         rm -rf "$TMUX_BUILD"
-        log_info "tmux rebuilt with Info.plist ($(codesign -dv "$TMUX_BIN" 2>&1 | grep '^Identifier='))"
         log_warn "Run 'tmux kill-server' so new sessions use the rebuilt binary"
     fi
 fi
