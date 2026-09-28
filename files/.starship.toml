@@ -84,6 +84,7 @@ style = "bg:yellow"
 format = '[[ $symbol $branch ](fg:crust bg:yellow)]($style)'
 truncation_length = 20
 truncation_symbol = "…"
+ignore_bare_repo = true
 
 [git_status]
 style = "bg:yellow"
@@ -103,9 +104,9 @@ result=""
 [ "$behind" -gt 0 ] && result="${result}⇣${behind}"
 [ -n "$result" ] && echo "$result"
 '''
-when = "git rev-parse --is-inside-work-tree 2>/dev/null && [ -z \"$(starship module git_status 2>/dev/null)\" ]"
+when = "[ \"$(git rev-parse --is-inside-work-tree 2>/dev/null)\" = true ] && [ -z \"$(starship module git_status 2>/dev/null)\" ]"
 style = "fg:crust bg:yellow"
-format = '[[$output ](fg:crust bg:yellow)]($style)'
+format = '[[($output )](fg:crust bg:yellow)]($style)'
 shell = ["bash", "--noprofile", "--norc"]
 
 [nodejs]
