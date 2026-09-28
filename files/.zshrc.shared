@@ -1,6 +1,5 @@
 export STARSHIP_CONFIG=~/.starship.toml
 
-export DOTNET_ROOT="$HOMEBREW_PREFIX/opt/dotnet/libexec"
 export PATH="$PATH:$HOME/.dotnet/tools"
 export PATH="$PATH:$HOME/workspace/dotfiles/shared/bin"
 export PATH="$PATH:$HOME/.local/bin"
