@@ -41,7 +41,7 @@
         "https://schemastore.azurewebsites.net/": true,
         "https://www.schemastore.org/": true
     },
-    "workbench.colorTheme": "JITX Colors",
+    "workbench.colorTheme": "Dracula Theme",
     "vscode-mcp-server.port": 3123,
     "vscode-mcp-server.defaultEnabled": true
 }
