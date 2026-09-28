@@ -69,6 +69,7 @@ style = "bg:peach fg:crust"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
+truncate_to_repo = false
 fish_style_pwd_dir_length = 1
 
 [directory.substitutions]
