@@ -14,6 +14,8 @@
   rebase = true
 [rebase]
   autoStash = true
+[merge]
+  conflictStyle = zdiff3
 [user]
 	name = andrewcfitz
 	email = andrew@fitz.biz
