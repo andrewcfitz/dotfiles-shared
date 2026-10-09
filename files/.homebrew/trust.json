@@ -1,9 +1,10 @@
 {
   "trustedtaps": [
-    "mistertea/et",
     "fluxcd/tap",
-    "loft-sh/tap",
     "getsentry/tools",
+    "https://github.com/andrewcfitz/next-up",
+    "loft-sh/tap",
+    "mistertea/et",
     "siderolabs/tap",
     "spacelift-io/spacelift"
   ],
