@@ -43,8 +43,7 @@ Options:
                     Local Network fix); start ET server at login
   --claude          Install Claude Code
   --iterm           Install iTerm2 AI plugin
-  --tmux            Rebuild tmux with an embedded Info.plist (macOS
-                    Local Network fix); install TPM and plugins
+  --tmux            Install TPM and tmux plugins
   --local           Run repo-local bootstrap.local.sh if present
 
 Examples:
@@ -249,11 +248,11 @@ brew_remove_bundle() {
 }
 
 # macOS Local Network Privacy appears to check a tool's whole parent chain:
-# anything run under a bundle-less Homebrew binary (tmux, etterminal) gets
+# anything run under a bundle-less Homebrew binary (etterminal) gets
 # "no route to host" for LAN addresses, while Apple's own tools work. Relinking
-# those binaries with an embedded __info_plist gives them a bundle identity
-# macOS can grant access to. `brew upgrade` puts stock binaries back, so the
-# callers check for the section and rebuild as needed.
+# the binary with an embedded __info_plist gives it a bundle identity macOS can
+# grant access to. `brew upgrade` puts the stock binary back, so the caller
+# checks for the section and rebuilds as needed.
 # https://colosieve.com/posts/fixing-tmux-local-network-privacy-macos/
 has_info_plist() {
     otool -l "$1" | grep -q __info_plist
@@ -473,36 +472,6 @@ if should_run ITERM; then
         log_info "iTerm2 AI plugin installed"
     else
         log_skip "iTerm2 AI plugin already installed"
-    fi
-fi
-
-# --- tmux rebuild with embedded Info.plist ---
-if should_run TMUX && [ "$(uname)" = "Darwin" ] && brew list --formula tmux &>/dev/null; then
-    log_section "tmux local network fix"
-    TMUX_BIN="$(cd "$(brew --prefix tmux)/bin" && pwd -P)/tmux"
-    if has_info_plist "$TMUX_BIN"; then
-        log_skip "tmux already has an embedded Info.plist"
-    else
-        TMUX_VERSION=$(brew list --versions tmux | awk '{print $2}')
-        TMUX_CELLAR=$(dirname "$(dirname "$TMUX_BIN")")
-        TMUX_BUILD=$(mktemp -d)
-        log_action "Building tmux $TMUX_VERSION with Info.plist..."
-        brew fetch --build-from-source --quiet tmux
-        tar -xzf "$(brew --cache --build-from-source tmux)" -C "$TMUX_BUILD" --strip-components=1
-        write_info_plist "$TMUX_BUILD/Info.plist" com.github.tmux tmux "$TMUX_VERSION" \
-            "tmux needs access to the local network to manage terminal sessions."
-        # Same source and flags as the Homebrew formula.
-        (
-            cd "$TMUX_BUILD"
-            export PKG_CONFIG_PATH="$(brew --prefix libevent)/lib/pkgconfig:$(brew --prefix ncurses)/lib/pkgconfig:$(brew --prefix utf8proc)/lib/pkgconfig:$(brew --prefix jemalloc)/lib/pkgconfig"
-            ./configure --prefix="$TMUX_CELLAR" --sysconfdir="$(brew --prefix)/etc" \
-                --enable-sixel --enable-utf8proc \
-                LDFLAGS="-Wl,-sectcreate,__TEXT,__info_plist,$TMUX_BUILD/Info.plist"
-            make -j"$(sysctl -n hw.ncpu)"
-        ) >"$TMUX_BUILD/build.log" 2>&1 || { tail -30 "$TMUX_BUILD/build.log"; log_error "tmux build failed"; exit 1; }
-        install_plist_binary "$TMUX_BUILD/tmux" "$TMUX_BIN"
-        rm -rf "$TMUX_BUILD"
-        log_warn "Run 'tmux kill-server' so new sessions use the rebuilt binary"
     fi
 fi
 
