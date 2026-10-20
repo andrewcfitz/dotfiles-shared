@@ -325,6 +325,19 @@ if should_run SYMLINKS; then
     mkdir -p "$VSCODE_USER_DIR"
     ln -sfn "$HOME/.config/Code/User/settings.json" "$VSCODE_USER_DIR/settings.json"
 
+    # Firefox profiles live under random names in ~/Library and have no
+    # global prefs file, so link user.js into each existing profile. A fresh
+    # machine has none until Firefox first launches; rerun --symlinks after.
+    FIREFOX_PROFILES_DIR="$HOME/Library/Application Support/Firefox/Profiles"
+    if compgen -G "$FIREFOX_PROFILES_DIR/*/" > /dev/null; then
+        log_action "Linking Firefox user.js into profiles..."
+        for profile in "$FIREFOX_PROFILES_DIR"/*/; do
+            ln -sfn "$HOME/.config/firefox/user.js" "${profile}user.js"
+        done
+    else
+        log_skip "No Firefox profiles yet; launch Firefox and rerun --symlinks"
+    fi
+
     log_info "Symlinks up to date"
 fi
 
