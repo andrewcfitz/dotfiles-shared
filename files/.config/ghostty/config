@@ -12,3 +12,8 @@ mouse-shift-capture = never
 
 # Escape hatch: fully disable mouse reporting when you want a burst of clicking.
 keybind = super+shift+m=toggle_mouse_reporting
+
+# Every new surface (window, tab, split) starts its own tmux session. Goes
+# through a login sh rather than bare `tmux` because a Dock-launched Ghostty
+# only has the launchd PATH, so Homebrew's tmux isn't found without path_helper.
+command = /bin/sh -lc "exec tmux new-session"
