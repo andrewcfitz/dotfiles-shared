@@ -14,5 +14,8 @@
     "loft-sh/tap/vcluster",
     "siderolabs/tap/talosctl",
     "stass/tap/blew"
+  ],
+  "trustedcasks": [
+    "betterleaks/tap/betterleaks@1"
   ]
 }
