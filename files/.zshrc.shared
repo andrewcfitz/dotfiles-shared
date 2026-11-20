@@ -30,14 +30,47 @@ source ~/.antidote/antidote.zsh
 
 antidote load
 
-autoload -Uz compinit && compinit
+# Generating completions forks each CLI (~200ms total), so cache the output and
+# regenerate only when the resolved binary path changes (e.g. after brew upgrade).
+_zcomp_dir=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/completions
+[[ -d $_zcomp_dir ]] || mkdir -p $_zcomp_dir
+fpath=($_zcomp_dir $fpath)
 
-command -v flux >/dev/null && . <(flux completion zsh)
-command -v kubectl >/dev/null && . <(kubectl completion zsh)
-command -v docker >/dev/null && . <(docker completion zsh)
-command -v gh >/dev/null && . <(gh completion -s zsh)
-command -v pulumi >/dev/null && . <(pulumi gen-completion zsh)
-command -v op >/dev/null && . <(op completion zsh)
+_zcomp_cache() {
+  local name=$1 out=$2; shift 2
+  local bin=${commands[$name]:A} stamp=$_zcomp_dir/.$name.stamp
+  [[ -n $bin ]] || return 1
+  [[ -s $out && -r $stamp && "$(<$stamp)" == $bin ]] && return 0
+  if "$@" >| $out.tmp 2>/dev/null && [[ -s $out.tmp ]]; then
+    command mv -f $out.tmp $out && print -r -- $bin >| $stamp
+    # compinit -C below won't notice new fpath files on its own.
+    command rm -f ${ZDOTDIR:-$HOME}/.zcompdump
+  else
+    command rm -f $out.tmp
+  fi
+}
+
+_zcomp_cache flux    $_zcomp_dir/_flux    flux completion zsh
+_zcomp_cache kubectl $_zcomp_dir/_kubectl kubectl completion zsh
+_zcomp_cache docker  $_zcomp_dir/_docker  docker completion zsh
+_zcomp_cache gh      $_zcomp_dir/_gh      gh completion -s zsh
+# op ships _op in Homebrew's site-functions, so it needs nothing here.
+
+# Skip the fpath security audit and rescan unless the dump is over a day old.
+autoload -Uz compinit
+_zcompdump=${ZDOTDIR:-$HOME}/.zcompdump
+_zcomp_stale=($_zcompdump(N.mh+24))
+if [[ ! -f $_zcompdump || -n $_zcomp_stale ]]; then
+  compinit && touch $_zcompdump
+else
+  compinit -C
+fi
+unset _zcompdump _zcomp_stale
+
+# Pulumi's script is bash-compat glue that has to be sourced, not autoloaded.
+_zcomp_cache pulumi $_zcomp_dir/pulumi.zsh pulumi gen-completion zsh && source $_zcomp_dir/pulumi.zsh
+unset _zcomp_dir
+unfunction _zcomp_cache
 
 # Up/Down arrow: search history for commands starting with the current input, cursor at end
 autoload -U up-line-or-beginning-search down-line-or-beginning-search
