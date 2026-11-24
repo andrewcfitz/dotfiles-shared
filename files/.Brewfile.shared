@@ -15,6 +15,7 @@ cask "firefox"
 cask "gitup-app"
 cask "stats"
 cask "scroll-reverser"
+cask "mqttx"
 
 # CLI tools
 brew "eza"
